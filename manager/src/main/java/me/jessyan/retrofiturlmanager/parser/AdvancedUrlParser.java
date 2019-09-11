@@ -28,6 +28,11 @@ import okhttp3.HttpUrl;
 /**
  * ================================================
  * 高级解析器, 当 BaseUrl 中有除了域名以外的其他 Path 时, 可使用此解析器
+ *  * 总结：------------------>>>>>>>>>>>>>>>>>
+ *  * //原有BaseUrl 全替换
+ *  在高级模式中您需要在 App 初始化时将您传给 Retrofit 的 BaseUrl 同样传给 RetrofitUrlManager#startAdvancedModel(String) 一份，
+ *  用以开启高级模式，成功开启高级模式后，这个传给 RetrofitUrlManager#startAdvancedModel(String) 的
+ *  BaseUrl 就会作为框架替换 BaseUrl 的基准
  * <p>
  * 比如:
  * 1.

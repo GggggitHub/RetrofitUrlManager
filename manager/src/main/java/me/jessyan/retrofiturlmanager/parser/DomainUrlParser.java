@@ -53,7 +53,7 @@ public class DomainUrlParser implements UrlParser {
     }
 
     @Override
-    public HttpUrl parseUrl(HttpUrl domainUrl, HttpUrl url) {
+    public HttpUrl parseUrl(HttpUrl domainUrl, HttpUrl url) {//eg： domainUrl https://api.douban.com/   url http://jessyan.me/v2/book/1220562
         // 如果 HttpUrl.parse(url); 解析为 null 说明,url 格式不正确,正确的格式为 "https://github.com:443"
         // http 默认端口 80, https 默认端口 443, 如果端口号是默认端口号就可以将 ":443" 去掉
         // 只支持 http 和 https
@@ -65,15 +65,15 @@ public class DomainUrlParser implements UrlParser {
         if (TextUtils.isEmpty(mCache.get(getKey(domainUrl, url)))) {
             for (int i = 0; i < url.pathSize(); i++) {
                 //当删除了上一个 index, PathSegment 的 item 会自动前进一位, 所以 remove(0) 就好
-                builder.removePathSegment(0);
+                builder.removePathSegment(0);// remove v2 book 1220562
             }
 
             List<String> newPathSegments = new ArrayList<>();
-            newPathSegments.addAll(domainUrl.encodedPathSegments());
-            newPathSegments.addAll(url.encodedPathSegments());
+            newPathSegments.addAll(domainUrl.encodedPathSegments());// ""
+            newPathSegments.addAll(url.encodedPathSegments());// v2 book 1220562
 
             for (String PathSegment : newPathSegments) {
-                builder.addEncodedPathSegment(PathSegment);
+                builder.addEncodedPathSegment(PathSegment);// "" v2 book 1220562
             }
         } else {
             builder.encodedPath(mCache.get(getKey(domainUrl, url)));
@@ -81,8 +81,8 @@ public class DomainUrlParser implements UrlParser {
 
         HttpUrl httpUrl = builder
                 .scheme(domainUrl.scheme())
-                .host(domainUrl.host())
-                .port(domainUrl.port())
+                .host(domainUrl.host())// TODO 重点 替换 jessyan.me 为 api.douban.com
+                .port(domainUrl.port())// http 为80 https 443  默认
                 .build();
 
         if (TextUtils.isEmpty(mCache.get(getKey(domainUrl, url)))) {

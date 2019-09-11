@@ -170,6 +170,9 @@ public class RetrofitUrlManager {
         Request.Builder newBuilder = request.newBuilder();
 
         String url = request.url().toString();
+        if (debug){
+            Log.i(TAG, "processRequest: origin url "+url);
+        }
         //如果 Url 地址中包含 IDENTIFICATION_IGNORE 标识符, 框架将不会对此 Url 进行任何切换 BaseUrl 的操作
         if (url.contains(IDENTIFICATION_IGNORE)) {
             return pruneIdentification(newBuilder, url);

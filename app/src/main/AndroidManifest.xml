@@ -16,7 +16,7 @@
         android:theme="@style/AppTheme">
         <activity
             android:name=".MainActivity"
-            android:windowSoftInputMode="adjustNothing|stateAlwaysVisible"
+            android:windowSoftInputMode="adjustNothing|stateAlwaysVisible|stateAlwaysHidden"
             >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

@@ -25,6 +25,9 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.ihsanbal.logging.Level;
+import com.ihsanbal.logging.LoggingInterceptor;
+
 import java.io.IOException;
 
 import io.reactivex.Observable;
@@ -37,13 +40,22 @@ import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 import me.jessyan.retrofiturlmanager.RetrofitUrlManager;
+import me.jessyan.retrofiturlmanager.demo.api.Api;
+import me.jessyan.retrofiturlmanager.demo.api.OneApiService;
 import me.jessyan.retrofiturlmanager.onUrlChangeListener;
 import me.jessyan.retrofiturlmanager.parser.AdvancedUrlParser;
 import me.jessyan.retrofiturlmanager.parser.DomainUrlParser;
 import me.jessyan.retrofiturlmanager.parser.SuperUrlParser;
 import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.ResponseBody;
+import okhttp3.logging.HttpLoggingInterceptor;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import retrofit2.converter.gson.GsonConverterFactory;
 
+import static me.jessyan.retrofiturlmanager.demo.api.Api.APP_DEFAULT_DOMAIN;
 import static me.jessyan.retrofiturlmanager.demo.api.Api.DOUBAN_DOMAIN_NAME;
 import static me.jessyan.retrofiturlmanager.demo.api.Api.GANK_DOMAIN_NAME;
 import static me.jessyan.retrofiturlmanager.demo.api.Api.GITHUB_DOMAIN_NAME;
@@ -144,6 +156,23 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        findViewById(R.id.bt_request3).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                HttpUrl httpUrl = RetrofitUrlManager.getInstance().fetchDomain(DOUBAN_DOMAIN_NAME);
+                if (httpUrl == null || !httpUrl.toString().equals(mUrl3.getText().toString())) { //可以在 App 运行时随意切换某个接口的 BaseUrl
+                    RetrofitUrlManager.getInstance().putDomain(DOUBAN_DOMAIN_NAME, mUrl3.getText().toString());
+                }
+                NetWorkManager
+                        .getInstance()
+                        .getThreeApiService()
+                        .getBook(1220562)
+                        .compose(MainActivity.this.<ResponseBody>getDefaultTransformer())
+                        .subscribe(getDefaultObserver());
+            }
+        });
+
+        //super model url后面设置 pathsize
         findViewById(R.id.bt_request2).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -163,21 +192,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.bt_request3).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                HttpUrl httpUrl = RetrofitUrlManager.getInstance().fetchDomain(DOUBAN_DOMAIN_NAME);
-                if (httpUrl == null || !httpUrl.toString().equals(mUrl3.getText().toString())) { //可以在 App 运行时随意切换某个接口的 BaseUrl
-                    RetrofitUrlManager.getInstance().putDomain(DOUBAN_DOMAIN_NAME, mUrl3.getText().toString());
-                }
-                NetWorkManager
-                        .getInstance()
-                        .getThreeApiService()
-                        .getBook(1220562)
-                        .compose(MainActivity.this.<ResponseBody>getDefaultTransformer())
-                        .subscribe(getDefaultObserver());
-            }
-        });
 
     }
 
@@ -217,7 +231,9 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
-                        RetrofitUrlManager.getInstance().startAdvancedModel(editText.getText().toString());
+//                        RetrofitUrlManager.getInstance().startAdvancedModel(editText.getText().toString());
+                        //fix  2019-09-11 输入创建时的baseURl,确保引用相同
+                        RetrofitUrlManager.getInstance().startAdvancedModel(APP_DEFAULT_DOMAIN);
                     }
                 })
                 .setNegativeButton("cancel", new DialogInterface.OnClickListener() {
@@ -236,6 +252,8 @@ public class MainActivity extends AppCompatActivity {
 
     // 请求默认 BaseUrl，请求的接口没有配置 DomainHeader，所以只受全局 BaseUrl的影响
     public void btnRequestDefault(View view) {
+        RetrofitUrlManager.getInstance().setGlobalDomain(mUrl1.getText().toString().trim());
+
         NetWorkManager
                 .getInstance()
                 .getOneApiService()
@@ -321,6 +339,38 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         RetrofitUrlManager.getInstance().unregisterUrlChangeListener(mListener); //记住注销监听器
+    }
+
+    public void mDefaultTest(View view) {
+//        MNetWorkManager.getInstance().getmTestService().requestDefault().compose(this.<ResponseBody>getDefaultTransformer())
+//                .subscribe(getDefaultObserver());
+
+        OkHttpClient.Builder httpClientBuilder = new OkHttpClient.Builder();
+        addLog(httpClientBuilder);
+        OkHttpClient httpClient = httpClientBuilder.build();
+        new Retrofit.Builder()
+                .baseUrl(APP_DEFAULT_DOMAIN)
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())//使用rxjava
+                .addConverterFactory(GsonConverterFactory.create())//使用Gson
+                .client(httpClient)
+                .build()
+                .create(OneApiService.class)
+                .requestDefault()
+                .compose(this.<ResponseBody>getDefaultTransformer())
+                .subscribe(getDefaultObserver());
+    }
+
+    public static void addLog(OkHttpClient.Builder httpClientBuilder) {
+        if (BuildConfig.DEBUG) {
+            //打印网络请求日志
+            LoggingInterceptor httpLoggingInterceptor = new LoggingInterceptor.Builder()
+                    .loggable(BuildConfig.DEBUG)
+                    .setLevel(Level.BASIC)
+                    .request("Request")
+                    .response("Response")
+                    .build();
+            httpClientBuilder.addInterceptor(httpLoggingInterceptor);
+        }
     }
 
     private class ChangeListener implements onUrlChangeListener {
